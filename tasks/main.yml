@@ -1,0 +1,18 @@
+- shell: /sbin/rsyslogd -v
+  register: results
+  environment:
+    LD_LIBRARY_PATH: /usr/local/lib
+
+- set_fact:
+    installed_rsyslog_version: "{{ results.stdout | regex_search(regexp, '\\1') | first }}"
+  vars:
+    regexp: 'rsyslogd *([0-9.]+)'
+
+- name: compile and install rsyslog
+  import_tasks: rsyslog.yml
+  when: installed_rsyslog_version != rsyslog_version
+
+- name: config rsyslog
+  import_tasks: config.yml
+  tags:
+    - reconfigure

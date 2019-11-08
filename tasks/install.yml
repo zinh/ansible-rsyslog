@@ -1,0 +1,20 @@
+- name: check {{ package_name }}
+  stat:
+    path: /root/rsyslog/{{ package_name }}/Makefile
+  register: libestr_makefile
+
+- name: configure {{ package_name }}
+  shell: ./configure --prefix=/usr/local
+  args:
+    chdir: /root/rsyslog/{{ package_name }}
+  when: libestr_makefile.stat.exists == False
+
+- name: make {{ package_name }}
+  shell: make
+  args:
+    chdir: /root/rsyslog/{{ package_name }}
+
+- name: install {{ package_name }}
+  shell: make install
+  args:
+    chdir: /root/rsyslog/{{ package_name }}

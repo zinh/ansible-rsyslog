@@ -1,0 +1,68 @@
+- name: prepare directory
+  file:
+    path: /root/rsyslog
+    state: directory
+
+- name: copy and extract dependencies to remote server
+  unarchive:
+    src: "files/{{ item }}"
+    dest: /root/rsyslog
+  with_items:
+    - libestr-0.1.11.tar.gz
+    - libfastjson-0.99.8.tar.gz
+    - rsyslog-8.1910.0.tar.gz
+
+- name: check libestr
+  stat:
+    path: /usr/local/lib/libestr.so
+  register: libestr
+
+- name: compile packages
+  import_tasks: install.yml
+  vars:
+    package_name: libestr-0.1.11
+  when: libestr.stat.exists == False
+
+- name: check libfastjson
+  stat:
+    path: /usr/local/lib/libfastjson.so
+  register: libfastjson
+
+- name: compile packages
+  import_tasks: install.yml
+  vars:
+    package_name: libfastjson-0.99.8
+  when: libfastjson.stat.exists == False
+
+- name: check if rsyslog is configured or not
+  stat:
+    path: /root/rsyslog/rsyslog-8.1910.0/Makefile
+  register: rsyslog_makefile
+
+- name: configure rsyslog
+  shell: ./configure --enable-imfile --enable-omruleset --sbindir=/sbin --prefix=/usr/local
+  args:
+    chdir: /root/rsyslog/rsyslog-8.1910.0
+  environment:
+    PKG_CONFIG_PATH: /usr/local/lib/pkgconfig
+  when: rsyslog_makefile.stat.exists == False
+
+- name: check if rsyslog compiled
+  stat:
+    path: /root/rsyslog/rsyslog-8.1910.0/tools/rsyslogd
+  register: rsyslog_compile
+
+- name: make rsyslog
+  shell: make
+  args:
+    chdir: /root/rsyslog/rsyslog-8.1910.0
+  environment:
+    PKG_CONFIG_PATH: /usr/local/lib/pkgconfig
+  when: rsyslog_compile.stat.exists == False
+
+- name: install rsyslog
+  shell: make install
+  args:
+    chdir: /root/rsyslog/rsyslog-8.1910.0
+  environment:
+    PKG_CONFIG_PATH: /usr/local/lib/pkgconfig

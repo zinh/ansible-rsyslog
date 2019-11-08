@@ -1,0 +1,60 @@
+- name: create rsyslog working directory
+  file:
+    path: /var/lib/rsyslog
+    state: directory
+
+- name: create rsyslog.d directory
+  file:
+    path: /etc/rsyslog.d
+    state: directory
+
+- name: config rsyslog
+  template:
+    src: templates/rsyslog.conf.j2
+    dest: /etc/rsyslog.conf
+    mode: 0644
+    owner: root
+    group: root
+  notify:
+    - restart rsyslog
+
+- name: config httpd log emitter
+  template:
+    src: templates/httpd.conf.j2
+    dest: /etc/rsyslog.d/httpd.conf
+    mode: 0644
+    owner: root
+    group: root
+  notify:
+    - restart rsyslog
+
+- name: config optional parameter for rsyslog
+  template:
+    src: templates/sysconfig/rsyslog.j2
+    dest: /etc/sysconfig/rsyslog
+    mode: 0644
+    owner: root
+    group: root
+  notify:
+    - restart rsyslog
+
+- name: config init script
+  template:
+    src: templates/rsyslog.j2
+    dest: /etc/init.d/rsyslog
+    mode: 0755
+    owner: root
+    group: root
+  notify:
+    - restart rsyslog
+
+- name: start rsyslog on boot
+  service:
+    name: rsyslog
+    state: started
+    enabled: yes
+
+- name: disable syslog if exists
+  service:
+    name: syslog
+    enabled: no
